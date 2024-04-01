@@ -65,7 +65,7 @@ void precompute_g1(){
 }
 
 template<class T>
-T pre_exp(vector<T>& pre, mpz_class n){
+T pre_exp(vector<T>& pre, mpz_class n){// compute pre^(every bit of n)
 	T temp = pre[0]*0;
 	int length = mpz_sizeinbase(n.get_mpz_t(), 2);
 	for(int i = 0; i < length; i++){
@@ -76,9 +76,9 @@ T pre_exp(vector<T>& pre, mpz_class n){
 }
 
 Ec1 g_baby_step[256 / 15 + 1][1 << 15];
-
 void KeyGen_preprocessing(Ec1 g)
 {
+	
 	Ec1 g_pow = g;
 	for(int i = 0; i < 256 / 15 + 1; ++i)
 	{
@@ -88,15 +88,17 @@ void KeyGen_preprocessing(Ec1 g)
 		g_pow = g_pow * (1 << 15);
 	}
 }
-
+ 	
 Ec1 g1_exp(mpz_class a)
 {
 	Ec1 ret = g1 * 0;
 	int length = mpz_sizeinbase(a.get_mpz_t(), 2);
+	int i = 1;
+
 	for(int i = 0; i < length / 15 + 1; ++i)
 	{
 		mpz_class mask_mpz = (a >> (i * 15)) & ((1 << 15) - 1);
-		int mask = mpz_get_si(mask_mpz.get_mpz_t());
+		int mask = mpz_get_si(mask_mpz.get_mpz_t());// turn mpz to integer, mask is a index
 		ret = ret + g_baby_step[i][mask];
 	}
 	return ret;
@@ -112,15 +114,19 @@ void KeyGen(int d){
 	g1a = pre_exp(g1_pre, a);
 	g2a = pre_exp(g2_pre, a);
 
+
 	s.resize(NumOfVar + 1);
-	for(int i = 0; i < NumOfVar + 1; i++)
+	for(int i = 0; i < NumOfVar + 1; i++){
 		mpz_urandomm(s[i].get_mpz_t(), r_state, p.get_mpz_t());
+	}
+
 	pub_g1_exp.resize((int)pow(2, d));
 	pub_g1.resize((int)pow(2, d) + 1);
 	pub_g2.resize(d + 1);
 	pub_g1_exp[0] = 1;
 	pub_g1[0] = g1;
 	pub_g2[0] = g2;
+	
 	for(int i = 0; i < d; i++){
 		for(int j = 1 << i; j < (1 << (i + 1)); j++){
 			pub_g1_exp[j] = (s[i] * pub_g1_exp[j - (1 << i)]) % p;
@@ -128,6 +134,7 @@ void KeyGen(int d){
 		}
 	}
 	pub_g1[1 << d] = pre_exp(g1_pre, s[d]);
+
 	//multi_scalar
 	//assert(multi_scalar_w == 2); //to avoid some error
 	vector<Ec1> scalars;
@@ -199,19 +206,19 @@ Ec1 multi_scalar_calc(int index, int pub_g1_length, const vector<mpz_class> &sca
 
 std::pair<mpz_class, mpz_class> commit(Ec1& digest, Ec1& digesta, Ec1& digest2, Ec1& digest2a, vector<mpz_class>& input, vector<mpz_class>& input2){
 
-	mpz_class r_f;
+
+	mpz_class r_f; //a random value
 	digest = g1 * 0;
 	mpz_urandomm(r_f.get_mpz_t(), r_state, p.get_mpz_t());
 	pre_input(input);
 	vector<mpz_class>& coeffs = input;
 	assert(coeffs.size() >= 1);
 	coeffs[(int)coeffs.size() - 1] = r_f;
-	
 	clock_t commit_t = clock();
-	
+
+
 	//compute digest pub
-	
-	for(int i = 0; i < coeffs.size(); i++)
+	for(int i = 0; i < coeffs.size();i++)
 		if(coeffs[i] < 0)
 			coeffs[i] += p;
 	

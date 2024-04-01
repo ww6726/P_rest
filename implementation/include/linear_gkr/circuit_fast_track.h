@@ -30,6 +30,8 @@ public:
 	int log_block_size;
 	int repeat_num;
 	int log_repeat_num;
+	//wenxuan
+	int gate_idx;
 	layer()
 	{
 		is_parallel = false;

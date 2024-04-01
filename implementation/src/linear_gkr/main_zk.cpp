@@ -11,15 +11,20 @@ zk_prover p;
 int main(int argc, char** argv)
 {
 	//std::cout << "hello world" << std::endl;
-
+	cout<<"Wenxuan: Run Libra"<<endl;
 	prime_field::init("16798108731015832284940804142231733909759579603404752749028378864165570215949", 10);
 	p.total_time = 0;
 	v.get_prover(&p);
 	//std::cout << "come in" << std::endl;
 	assert(argc == 4);
+
 	v.read_circuit(argv[1], argv[2]);
 	//std::cout << "after readfile" << std::endl;
+	cout<<"Wenxuan: get circuit"<<endl;
 	p.get_circuit(v.C);
+
+	cout<<"Wenxuan: verify"<<endl;
+	cout<<argv[3]<<endl;
 	bool result = v.verify(argv[3]);
 	printf("%s\n", result ? "Pass" : "Fail");
 	return 0;

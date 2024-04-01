@@ -24,11 +24,14 @@ void zk_prover::get_circuit(const layered_circuit &from_verifier)
 	inv_2 = from_string("8399054365507916142470402071115866954879789801702376374514189432082785107975");
 }
 
+//accumulate output with randomness to a single point
 prime_field::field_element zk_prover::V_res(const prime_field::field_element* one_minus_r_0, const prime_field::field_element* r_0, const prime_field::field_element* output_raw, int r_0_size, int output_size)
-{
+{	
 	std::chrono::high_resolution_clock::time_point t0 = std::chrono::high_resolution_clock::now();
 	prime_field::field_element *output;
 	output = new prime_field::field_element[output_size];
+
+
 	for(int i = 0; i < output_size; ++i)
 		output[i] = output_raw[i];
 	for(int i = 0; i < r_0_size; ++i)
@@ -423,16 +426,16 @@ void zk_prover::sumcheck_phase1_init()
 	//mult init
 	total_uv = (1 << C.circuit[sumcheck_layer_id - 1].bit_length);
 	prime_field::field_element zero = prime_field::field_element(0);
-	for(int i = 0; i < total_uv; ++i)
+
+	
+	for(int i = 0; i < total_uv; ++i)	
 	{
 		V_mult_add[i] = circuit_value[sumcheck_layer_id - 1][i];
-
 		addV_array[i].a = zero;
 		addV_array[i].b = zero;
 		add_mult_sum[i].a = zero;
 		add_mult_sum[i].b = zero;
 	}
-	
 	beta_g_r0_fhalf[0] = alpha;
 	beta_g_r1_fhalf[0] = beta;
 	beta_g_r0_shalf[0] = prime_field::field_element(1);
@@ -440,17 +443,16 @@ void zk_prover::sumcheck_phase1_init()
 
 	int first_half = length_g >> 1, second_half = length_g - first_half;
 
-	for(int i = 0; i < first_half; ++i)
+	for(int i = 0; i < first_half; ++i)//compute G
 	{
 		for(int j = 0; j < (1 << i); ++j)
-		{
+		{	
 			beta_g_r0_fhalf[j | (1 << i)].value = beta_g_r0_fhalf[j].value * r_0[i].value % prime_field::mod;
 			beta_g_r0_fhalf[j].value = beta_g_r0_fhalf[j].value * one_minus_r_0[i].value % prime_field::mod;
 			beta_g_r1_fhalf[j | (1 << i)].value = beta_g_r1_fhalf[j].value * r_1[i].value % prime_field::mod;
 			beta_g_r1_fhalf[j].value = beta_g_r1_fhalf[j].value * one_minus_r_1[i].value % prime_field::mod;
 		}
 	}
-
 	for(int i = 0; i < second_half; ++i)
 	{
 		for(int j = 0; j < (1 << i); ++j)
@@ -463,7 +465,7 @@ void zk_prover::sumcheck_phase1_init()
 	}
 
 	int mask_fhalf = (1 << first_half) - 1;
-	
+
 	for(int i = 0; i < (1 << length_g); ++i)
 	{
 		int u, v;
@@ -612,6 +614,8 @@ quadratic_poly zk_prover::sumcheck_phase1_update(prime_field::field_element prev
 	quadratic_poly ret = quadratic_poly(prime_field::field_element(0), prime_field::field_element(0), prime_field::field_element(0));
 	for(int i = 0; i < (total_uv >> 1); ++i)
 	{
+
+	
 		prime_field::field_element zero_value, one_value;
 		int g_zero = i << 1, g_one = i << 1 | 1;
 		if(current_bit == 0)
@@ -628,6 +632,8 @@ quadratic_poly zk_prover::sumcheck_phase1_update(prime_field::field_element prev
 		}
 		else
 		{
+			cout<<add_mult_sum[i].a.to_gmp_class()<<endl;
+
 			V_mult_add[i].b.value = (V_mult_add[g_zero].a.value * previous_random.value + V_mult_add[g_zero].b.value) % prime_field::mod;
 			V_mult_add[i].a.value = (V_mult_add[g_one].a.value * previous_random.value + V_mult_add[g_one].b.value - V_mult_add[i].b.value + prime_field::mod_512) % prime_field::mod;
 
@@ -644,8 +650,9 @@ quadratic_poly zk_prover::sumcheck_phase1_update(prime_field::field_element prev
 		ret.c.value = (ret.c.value + add_mult_sum[i].b.value * V_mult_add[i].b.value
 									+ addV_array[i].b.value) % prime_field::mod;
 	}
-
+	exit(1);
 	total_uv >>= 1;
+
 	Iuv = Iuv * (prime_field::field_element(1) - previous_random);
 	if(current_bit > 0){
 		maskR_sumcu = maskR_sumcu * (prime_field::field_element(1) - previous_random);
@@ -653,14 +660,13 @@ quadratic_poly zk_prover::sumcheck_phase1_update(prime_field::field_element prev
 
 		Zu = Zu * (prime_field::field_element(1) - previous_random) * previous_random;
 	}
-
+	
 	ret.b = ret.b - maskR_sumcu - maskR_sumcv;
 	ret.c = ret.c + maskR_sumcu + maskR_sumcv;
 
 
 	
 	//compute with sumcheck maskpol
-
 	prime_field::field_element tmp1, tmp2;
 	tmp1.value = maskpoly[current_bit << 1].value;
 	tmp2.value = maskpoly[(current_bit << 1) + 1].value;
@@ -694,6 +700,7 @@ quintuple_poly zk_prover::sumcheck_phase1_updatelastbit(prime_field::field_eleme
 {	
 	std::chrono::high_resolution_clock::time_point t0 = std::chrono::high_resolution_clock::now();
 	quintuple_poly ret = quintuple_poly(prime_field::field_element(0), prime_field::field_element(0), prime_field::field_element(0), prime_field::field_element(0), prime_field::field_element(0), prime_field::field_element(0));
+
 	for(int i = 0; i < (total_uv >> 1); ++i)
 	{
 		prime_field::field_element zero_value, one_value;

@@ -17,6 +17,7 @@ void verifier::read_circuit(const char *path)
 	static char str[300];
 	FILE *circuit_in;
 	circuit_in = fopen(path, "r");
+	cout<<"inside read circuit"<<endl;
 
 	fscanf(circuit_in, "%d", &d);
 	int n;

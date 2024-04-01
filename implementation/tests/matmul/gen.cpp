@@ -8,7 +8,6 @@ using namespace std;
 
 int main(int argc, char **argv)
 {
-
 	int mat_sz;
 	sscanf(argv[1], "%d", &mat_sz);
 	FILE *output_path = fopen(argv[2], "w");
